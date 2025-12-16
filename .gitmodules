@@ -1,0 +1,3 @@
+[submodule "AOsim"]
+	path = AOsim
+	url = https://github.com/Vkn164/AOsim
