@@ -1,0 +1,45 @@
+name: Auto Update Submodules
+
+on:
+  schedule:
+    - cron: '0 * * * *' # hourly
+  workflow_dispatch:
+
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repo with submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0   # needed to fetch full history
+
+      - name: Update submodules if needed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          changed=false
+
+          # Loop through submodules
+          git submodule foreach '
+            echo "Checking $name..."
+            git fetch origin
+            latest_commit=$(git rev-parse origin/HEAD)
+            current_commit=$(git rev-parse HEAD)
+            if [ "$latest_commit" != "$current_commit" ]; then
+              echo "$name has a new commit. Updating..."
+              git checkout $latest_commit
+              changed=true
+            fi
+          '
+
+          if [ "$changed" = true ]; then
+            git add .
+            git commit -m "Auto-update submodules to latest commits"
+            git push
+          else
+            echo "No submodule updates needed."
+          fi
