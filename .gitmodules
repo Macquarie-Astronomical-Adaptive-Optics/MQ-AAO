@@ -1,3 +1,6 @@
 [submodule "AOsim"]
 	path = AOsim
 	url = https://github.com/Vkn164/AOsim
+[submodule "DLPC900"]
+	path = DLPC900
+	url = https://github.com/RhojAnn/DLPC900_CLI.git
