@@ -35,7 +35,6 @@ jobs:
           git submodule foreach --recursive '
             echo "=== Processing submodule: $name ($path) ==="
 
-            # Determine branch to track (from .gitmodules if declared)
             branch=$(git config -f "$toplevel/.gitmodules" submodule."$name".branch || true)
 
             if [ -z "$branch" ]; then
@@ -50,11 +49,9 @@ jobs:
 
             echo "Tracking branch: ${branch:-<none>}"
 
-            # Record current commit
             before_sha=$(git rev-parse --verify HEAD)
 
             if [ -n "$branch" ]; then
-              # Fetch and move to origin/<branch>
               git fetch origin "$branch" --quiet || true
 
               if git show-ref --verify --quiet "refs/heads/$branch"; then
@@ -65,18 +62,16 @@ jobs:
 
               git reset --hard "origin/$branch"
 
-              # new commit
               after_sha=$(git rev-parse --verify HEAD)
 
               if [ "$before_sha" != "$after_sha" ]; then
-                # Append a short summary line to the superproject marker file
-                # Format: path: branch (old..new)
-                printf "%s: %s (%s -> %s)\n" "$path" "$branch" "${before_sha:0:7}" "${after_sha:0:7}" >> "$toplevel/.submodules_updates"
+                # portable short-SHA extraction
+                before_short=$(printf "%s" "$before_sha" | cut -c1-7)
+                after_short=$(printf "%s" "$after_sha" | cut -c1-7)
 
-                # stage the submodule change in the superproject
+                printf "%s: %s (%s -> %s)\n" "$path" "$branch" "$before_short" "$after_short" >> "$toplevel/.submodules_updates"
+
                 git -C "$toplevel" add "$path"
-
-                # flag that something changed
                 touch "$toplevel/.submodules_changed"
               else
                 echo "No update for $name ($path)"
@@ -85,6 +80,7 @@ jobs:
               echo "No branch found for $name — skipping"
             fi
           '
+
 
       - name: Commit & push with submodule names + SHAs
         run: |
