@@ -38,7 +38,12 @@ jobs:
             branch=$(git config -f "$toplevel/.gitmodules" submodule."$name".branch || true)
 
             if [ -z "$branch" ]; then
-              if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+              # Use the remote's default branch (origin/HEAD) instead of assuming "main"
+              default_branch=$(git ls-remote --symref origin HEAD 2>/dev/null | sed -n "s@^ref: refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD@\1@p" | head -n1 || true)
+
+              if [ -n "$default_branch" ]; then
+                branch="$default_branch"
+              elif git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
                 branch=main
               elif git ls-remote --exit-code --heads origin master >/dev/null 2>&1; then
                 branch=master
